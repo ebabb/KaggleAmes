@@ -1,27 +1,26 @@
 ---
-title: "Project"
+title: "House Prices: Advanced Regression Techniques"
 author: "Rafael Asuncion and Erik Babb"
 date: "May 18, 2017"
-output: word_document
+output:
+  word_document: default
 ---
-```{r enable parallel processing}
-library(doParallel)
-registerDoParallel(makeCluster(detectCores()))
-```
+
+Dataset from https://www.kaggle.com/c/house-prices-advanced-regression-techniques
 
 Step1: Collecting the data
 
 For this data exploration, we shall be examining the Ames Housing Dataset
 ```{r Load data}
-housing <- read.csv("C:/Users/Rafael Asuncion/Documents/WORK/Capstone/train.csv")
-#ousing <- read.csv("C:/Users/eb832f/Documents/Data Science/CSUEB/Spring 2017/Capstone/Raf/train.csv")
+#housing <- read.csv("C:/Users/Rafael Asuncion/Documents/WORK/Capstone/train.csv")
+housing <- read.csv("C:/Users/eb832f/Documents/Data Science/CSUEB/Spring 2017/Capstone/Raf/train.csv")
 #train <- read.csv("C:/Users/eb832f/Documents/Data Science/CSUEB/Spring 2017/Capstone/train.csv")
 ```
 
 Step2: Examining the data
 
--observe summary of data. value to be predicted is salesPrice.
--drop id as an independent variable
+-observe summary of data. Value to be predicted is SalesPrice.
+-drop ID as an independent variable
 ```{r }
 housing <- housing[ , !(names(housing) %in% "Id")] #remove the Id column
 str(housing)
@@ -80,6 +79,7 @@ missmap(housing, main = "Missing values vs observed")
 ```
 
 - include NA as a factor for categorical variables with NA (not applicable) as an option
+- convert NA to a meaningful level
 ```{r }
 housing$Alley <- addNA(housing$Alley)
 housing$PoolQC <- addNA(housing$PoolQC)
@@ -95,6 +95,21 @@ housing$BsmtCond <- addNA(housing$BsmtCond)
 housing$BsmtExposure <- addNA(housing$BsmtExposure)
 housing$BsmtFinType1 <- addNA(housing$BsmtFinType1)
 housing$BsmtFinType2 <- addNA(housing$BsmtFinType2)
+
+levels(housing$Alley)[is.na(levels(housing$Alley))] <- "noAlley"
+levels(housing$PoolQC)[is.na(levels(housing$PoolQC))] <- "noPool"
+levels(housing$MiscFeature)[is.na(levels(housing$MiscFeature))] <- "none"
+levels(housing$Fence)[is.na(levels(housing$Fence))] <- "noFence"
+levels(housing$FireplaceQu)[is.na(levels(housing$FireplaceQu))] <- "noFireplace"
+levels(housing$GarageCond)[is.na(levels(housing$GarageCond))] <- "noGarage"
+levels(housing$GarageQual)[is.na(levels(housing$GarageQual))] <- "noGarage"
+levels(housing$GarageFinish)[is.na(levels(housing$GarageFinish))] <- "noGarage"
+levels(housing$GarageType)[is.na(levels(housing$GarageType))] <- "noGarage"
+levels(housing$BsmtQual)[is.na(levels(housing$BsmtQual))] <- "noBasement"
+levels(housing$BsmtCond)[is.na(levels(housing$BsmtCond))] <- "noBasement"
+levels(housing$BsmtExposure)[is.na(levels(housing$BsmtExposure))] <- "noBasement"
+levels(housing$BsmtFinType1)[is.na(levels(housing$BsmtFinType1))] <- "noBasement"
+levels(housing$BsmtFinType2)[is.na(levels(housing$BsmtFinType2))] <- "noBasement"
 ```
 
 - examine missing values again
@@ -125,8 +140,8 @@ mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-train_NAsToMode["LotFrontage"][is.na(train_NAsToMode["LotFrontage"])] <- mode(housing$LotFrontage)
-train_NAsToMode["GarageYrBlt"][is.na(train_NAsToMode["GarageYrBlt"])] <- mode(housing$GarageYrBlt)
+train_NAsToMode["LotFrontage"][is.na(train_NAsToMode["LotFrontage"])] <- as.integer(0) #mode from housing would be NA
+train_NAsToMode["GarageYrBlt"][is.na(train_NAsToMode["GarageYrBlt"])] <- as.integer(0) #mode from housing would be NA
 train_NAsToMode["MasVnrArea"][is.na(train_NAsToMode["MasVnrArea"])] <- mode(housing$MasVnrArea)
 train_NAsToMode["MasVnrType"][is.na(train_NAsToMode["MasVnrType"])] <- mode(housing$MasVnrType)
 train_NAsToMode["Electrical"][is.na(train_NAsToMode["Electrical"])] <- mode(housing$Electrical)
@@ -173,19 +188,6 @@ write.csv(train_NoNomVars, file = "train_NoNomVars.csv",row.names=FALSE)
 ```{r}
 train_OrdDefined <- housing
 
-#covert NAs to more meaningful name
-levels(train_OrdDefined$BsmtQual) <- c(levels(train_OrdDefined$BsmtQual), "noBasement")
-levels(train_OrdDefined$BsmtCond) <- c(levels(train_OrdDefined$BsmtCond), "noBasement")
-levels(train_OrdDefined$BsmtExposure) <- c(levels(train_OrdDefined$BsmtExposure), "noBasement")
-levels(train_OrdDefined$BsmtFinType1) <- c(levels(train_OrdDefined$BsmtFinType1), "noBasement")
-levels(train_OrdDefined$BsmtFinType2) <- c(levels(train_OrdDefined$BsmtFinType2), "noBasement")
-levels(train_OrdDefined$FireplaceQu) <- c(levels(train_OrdDefined$FireplaceQu), "noFireplace")
-levels(train_OrdDefined$GarageFinish) <- c(levels(train_OrdDefined$GarageFinish), "noGarage")
-levels(train_OrdDefined$GarageQual) <- c(levels(train_OrdDefined$GarageQual), "noGarage")
-levels(train_OrdDefined$GarageCond) <- c(levels(train_OrdDefined$GarageCond), "noGarage")
-levels(train_OrdDefined$PoolQC) <- c(levels(train_OrdDefined$PoolQC), "noPool")
-levels(train_OrdDefined$Fence) <- c(levels(train_OrdDefined$Fence), "noFence")
-
 lvlOrd <- list(
   LotShape = c("Reg", "IR1", "IR2", "IR3"),
   Utilities = c("AllPub", "NoSewr", "NoSeWa", "ELO"),
@@ -223,8 +225,10 @@ write.csv(train_OrdDefined, file = "train_OrdDefined.csv",row.names=FALSE)
 ```{r }
 set.seed(300)
 indx = sample(1:nrow(housing), as.integer(0.60*nrow(housing)))
+
 housing_train = housing[indx,]
 housing_test = housing[-indx,]
+housing_test_actual = housing_test[, "SalePrice"]
 
 train1 <- train_DropNAs[indx,]
 test1 <- train_DropNAs[-indx,]
@@ -246,20 +250,14 @@ train5 <- train_OrdDefined[indx,]
 test5 <- train_OrdDefined[-indx,]
 test5_actual = test5[, "SalePrice"]
 
-housing_test_actual = housing_test[, "SalePrice"]
-
-#What does this do? train and test are already created above
-#indx2 = sample(1:nrow(housing_test), as.integer(0.6*nrow(housing_test)))
-#housing_validation = housing_test[-indx2,]
-#housing_test = housing_test[indx2,]
 ```
 
 
 -Create a table to display the the RSME result values
 ```{r}
-mat = matrix(0, nrow = 5, ncol = 5)
+mat = matrix(0, nrow = 5, ncol = 3)
 dat = as.data.frame(mat)
-colnames(dat) <- c("Basic LM", "Adv LM", "Bagging", "rpart", "Caret RF")
+colnames(dat) <- c("Bagged Regression Tree", "Random Forest", "SVM")
 rownames(dat) <- c("train_DropNAs", "train_NAsToMode", "train_IntsToFactors", "train_NoNomVars", "train_OrdDefined")
 
 ```
@@ -307,8 +305,8 @@ rmse(error)
 
 ModelB: Regression Tree
 
-Step 3: Training the model
-
+- Step 3: Training the model
+- use rpart decision tree
 ```{r }
 library(rpart)
 model3_decisiontree1 <- rpart(SalePrice ~ ., data = housing_train)
@@ -316,8 +314,7 @@ summary(model3_decisiontree1)
 ```
 
 - Step 4: Evaluating Model Performance
-
-- use rpart decision tree and make predictions. examine rmse.
+- make predictions and examine rmse
 ```{r }
 my_prediction_decision_tree <- predict(model3_decisiontree1, housing_test)
 error_decision_tree <- housing_test_actual - my_prediction_decision_tree
@@ -326,17 +323,14 @@ rmse(error_decision_tree)
 ```
 
 - Step 5: Improving Model Performance
-
-- implement a Bagged Regeression Tree
-
+- implement a Bagged Regeression Tree using ipred package
 ```{r }
 library(ipred)
 set.seed(300)
 model4_decision_tree_ipred <- bagging(SalePrice ~ ., data = housing_train, nbagg = 25)
 ```
 
-- make predictions and examine rmse. 
-
+- make predictions and examine rmse
 ```{r }
 my_prediction_decision_tree_ipred <- predict(model4_decision_tree_ipred, housing_test)
 error_decision_tree_ipred <- housing_test_actual - my_prediction_decision_tree_ipred
@@ -346,7 +340,6 @@ rmse(error_decision_tree_ipred)
 ModelC: Random Forest
 
 Step3: Training the model
-
 - implement a random forest using significant continous variable predictors
 ```{r }
 library(randomForest)
@@ -356,7 +349,6 @@ rf
 ```
 
 Step4 : Evaluating model performance
-
 ```{r }
 predictions_rf <- predict(rf, housing_test)
 error_rf <- housing_test_actual - predictions_rf
@@ -364,7 +356,6 @@ rmse(error_rf)
 ```
 
 Step 5: Improving model performance
-
 - auto-tune random forest
 ```{r }
 library(caret)
@@ -434,34 +425,31 @@ set.seed(300)
 model_bagged_train1 <- bagging(SalePrice ~ ., data = train1, nbagg = 25)
 pred_test1_bagged <- predict(model_bagged_train1, test1)
 error_test1_bagged <- test1_actual - pred_test1_bagged
-rmse(error_test1_bagged)
+dat["train_DropNAs", "Bagged Regression Tree"] <- rmse(error_test1_bagged)
 ```
 
 - Set2 Bagged Regression Tree RMSE
 ```{r }
-set.seed(300)
 model_bagged_train2 <- bagging(SalePrice ~ ., data = train2, nbagg = 25)
 pred_test2_bagged <- predict(model_bagged_train2, test2)
 error_test2_bagged <- test2_actual - pred_test2_bagged
-rmse(error_test2_bagged)
+dat["train_NAsToMode", "Bagged Regression Tree"] <- rmse(error_test2_bagged)
 ```
 
 - Set3 Bagged Regression Tree RMSE
 ```{r }
-set.seed(300)
 model_bagged_train3 <- bagging(SalePrice ~ ., data = train3, nbagg = 25)
 pred_test3_bagged <- predict(model_bagged_train3, test3)
 error_test3_bagged <- test3_actual - pred_test3_bagged
-rmse(error_test3_bagged)
+dat["train_IntsToFactors", "Bagged Regression Tree"] <- rmse(error_test3_bagged)
 ```
 
 - Set4 Bagged Regression Tree RMSE
 ```{r }
-set.seed(300)
 model_bagged_train4 <- bagging(SalePrice ~ ., data = train4, nbagg = 25)
 pred_test4_bagged <- predict(model_bagged_train4, test4)
 error_test4_bagged <- test4_actual - pred_test4_bagged
-rmse(error_test4_bagged)
+dat["train_NoNomVars", "Bagged Regression Tree"] <- rmse(error_test4_bagged)
 ```
 
 - Set5 Bagged Regression Tree RMSE
@@ -469,113 +457,122 @@ rmse(error_test4_bagged)
 model_bagged_train5 <- bagging(SalePrice ~ ., data = train5, nbagg = 25)
 pred_test5_bagged <- predict(model_bagged_train5, test5)
 error_test5_bagged <- test5_actual - pred_test5_bagged
-rmse(error_test5_bagged)
+dat["train_OrdDefined", "Bagged Regression Tree"] <- rmse(error_test5_bagged)
 ```
 
 Random Forest
 
-- original random forest rmse
+- original Random Forest RMSE
 ```{r }
 rmse(error_rf)
 ```
 
 - Set1 Random Forest
-```{r }
-model_rf_train1 <- randomForest(SalePrice ~ LotArea + OverallQual + GrLivArea + GarageCars + YearBuilt + TotalBsmtSF + WoodDeckSF, data = train1, na.action = na.omit)
+```{r}
+library(randomForest)
+set.seed(300)
+model_rf_train1 <- randomForest(SalePrice ~ ., data = train1, na.action = na.omit)
 predictions_rf_train1 <- predict(model_rf_train1, test1)
 error_rf_train1 <- test1_actual - predictions_rf_train1
-rmse(error_rf_train1)
+dat["train_DropNAs", "Random Forest"] <- rmse(error_rf_train1)
 ```
 
 - Set2 Random Forest
-```{r }
-model_rf_train2 <- randomForest(SalePrice ~ LotArea + OverallQual + GrLivArea + GarageCars + YearBuilt + TotalBsmtSF + WoodDeckSF, data = train2, na.action = na.omit)
+```{r}
+model_rf_train2 <- randomForest(SalePrice ~ ., data = train2, na.action = na.omit)
 predictions_rf_train2 <- predict(model_rf_train2, test2)
 error_rf_train2 <- test2_actual - predictions_rf_train2
-rmse(error_rf_train2)
+dat["train_NAsToMode", "Random Forest"] <- rmse(error_rf_train2)
 ```
 
 - Set3 Random Forest
-```{r }
-model_rf_train3 <- randomForest(SalePrice ~ LotArea + OverallQual + GrLivArea + GarageCars + YearBuilt + TotalBsmtSF + WoodDeckSF, data = train3, na.action = na.omit)
+```{r}
+model_rf_train3 <- randomForest(SalePrice ~ ., data = train3, na.action = na.omit)
 predictions_rf_train3 <- predict(model_rf_train3, test3)
-error_rf_train3 <- test3_actual - predictions_rf_train3
-rmse(error_rf_train3)
+error_rf_train3 <- test3_actual[!is.na(predictions_rf_train3)] - predictions_rf_train3[!is.na(predictions_rf_train3)]
+dat["train_IntsToFactors", "Random Forest"] <- rmse(error_rf_train3)
+
 ```
 
 - Set4 Random Forest
-```{r }
-model_rf_train4 <- randomForest(SalePrice ~ LotArea + GrLivArea + GarageCars + YearBuilt + TotalBsmtSF + WoodDeckSF, data = train4, na.action = na.omit)
+```{r}
+model_rf_train4 <- randomForest(SalePrice ~ ., data = train4, na.action = na.omit)
 predictions_rf_train4 <- predict(model_rf_train4, test4)
-error_rf_train4 <- test4_actual - predictions_rf_train4
-rmse(error_rf_train4)
+error_rf_train4 <- test4_actual[!is.na(predictions_rf_train4)] - predictions_rf_train4[!is.na(predictions_rf_train4)]
+dat["train_NoNomVars", "Random Forest"] <- rmse(error_rf_train4)
 ```
 
 - Set5 Random Forest
-```{r }
-model_rf_train5 <- randomForest(SalePrice ~ LotArea + OverallQual + GrLivArea + GarageCars + YearBuilt + TotalBsmtSF + WoodDeckSF, data = train5, na.action = na.omit)
+```{r}
+model_rf_train5 <- randomForest(SalePrice ~ ., data = train5, na.action = na.omit)
 predictions_rf_train5 <- predict(model_rf_train5, test5)
-error_rf_train5 <- test5_actual - predictions_rf_train5
-rmse(error_rf_train5)
+error_rf_train5 <- test5_actual[!is.na(predictions_rf_train5)] - predictions_rf_train5[!is.na(predictions_rf_train5)]
+dat["train_OrdDefined", "Random Forest"] <- rmse(error_rf_train5)
 ```
+
 
 SVM
 
 - original SVM RMSE
-
 ```{r }
 rmse(error_svm)
 ```
 
 - Set1 SVM
 ```{r }
+set.seed(300)
+library(kernlab)
 model_svm_train1 <- ksvm(SalePrice ~ ., data = train1, kernel = "vanilladot")
 pred_svm_train1 <- predict(model_svm_train1, test1)
 error_svm_train1 <- test1_actual - pred_svm_train1
-rmse(error_svm_train1)
+dat["train_DropNAs", "SVM"] <- rmse(error_svm_train1)
 ```
 
 - Set2 SVM
-```{r }
-model_svm_train2 <- ksvm(SalePrice ~ LotArea + OverallQual + GrLivArea + GarageCars + YearBuilt + TotalBsmtSF + WoodDeckSF, data = train2, kernel = "vanilladot")
+```{r}
+model_svm_train2 <- ksvm(SalePrice ~ ., data = train2, kernel = "vanilladot")
 pred_svm_train2 <- predict(model_svm_train2, test2)
 error_svm_train2 <- test2_actual - pred_svm_train2
-rmse(error_svm_train2)
+dat["train_NAsToMode", "SVM"] <- rmse(error_svm_train2)
 ```
 
 - Set3 SVM
 ```{r }
-model_svm_train3 <- ksvm(SalePrice ~ LotArea + OverallQual + GrLivArea + GarageCars + YearBuilt + TotalBsmtSF + WoodDeckSF, data = train3, kernel = "vanilladot")
+#default na.action=na.omit which leads to rejection of cases with any missing values
+model_svm_train3 <- ksvm(SalePrice ~ ., data = train3, kernel = "vanilladot")
 pred_svm_train3 <- predict(model_svm_train3, test3)
-error_svm_train3 <- test3_actual - pred_svm_train3
-rmse(error_svm_train3)
+error_svm_train3 <- test3_actual[complete.cases(test3)] - pred_svm_train3
+dat["train_IntsToFactors", "SVM"] <- rmse(error_svm_train3)
 ```
 
 - Set4 SVM
 ```{r }
-model_svm_train4 <- ksvm(SalePrice ~ LotArea + GrLivArea + GarageCars + YearBuilt + TotalBsmtSF + WoodDeckSF, data = train4, kernel = "vanilladot")
+model_svm_train4 <- ksvm(SalePrice ~ ., data = train4, kernel = "vanilladot")
 pred_svm_train4 <- predict(model_svm_train4, test4)
-error_svm_train4 <- test4_actual - pred_svm_train4
-rmse(error_svm_train4)
+error_svm_train4 <- test4_actual[complete.cases(test4)] - pred_svm_train4
+dat["train_NoNomVars", "SVM"] <- rmse(error_svm_train4)
 ```
 
 - Set5 SVM
 ```{r }
-model_svm_train5 <- ksvm(SalePrice ~ LotArea + GrLivArea + GarageCars + YearBuilt + TotalBsmtSF + WoodDeckSF, data = train5, kernel = "vanilladot")
+model_svm_train5 <- ksvm(SalePrice ~ ., data = train5, kernel = "vanilladot")
 pred_svm_train5 <- predict(model_svm_train5, test5)
-error_svm_train5 <- test5_actual - pred_svm_train5
-rmse(error_svm_train5)
+error_svm_train5 <- test5_actual[complete.cases(test5)] - pred_svm_train5
+dat["train_OrdDefined", "SVM"] <-rmse(error_svm_train5)
 ```
 
 CONCLUSION OF FINDINGS
+```{r}
+dat
+min(dat)
+```
 
 After testing re-engineered datasets on Bagged Regression Trees, Random Forests and SVM we have found that the lowest RMSE upon testing is when SVM is used on Set1.
 
 - Best Model with lowest Test RMSE
 ```{r }
-model_svm_train1 <- ksvm(SalePrice ~ ., data = train1, kernel = "vanilladot")
-pred_svm_train1 <- predict(model_svm_train1, test1)
-error_svm_train1 <- test1_actual - pred_svm_train1
-rmse(error_svm_train1)
+model_rf_train1 <- randomForest(SalePrice ~ ., data = train1, na.action = na.omit)
+predictions_rf_train1 <- predict(model_rf_train1, test1)
+error_rf_train1 <- test1_actual - predictions_rf_train1
+rmse(error_rf_train1)
 ```
-
