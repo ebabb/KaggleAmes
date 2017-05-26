@@ -4,7 +4,41 @@ author: "Rafael Asuncion and Erik Babb"
 date: "May 18, 2017"
 output:
   word_document: default
+theme: cerulean
 ---
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 12px;
+  }
+td {  /* Table  */
+  font-size: 8px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
 
 Dataset from https://www.kaggle.com/c/house-prices-advanced-regression-techniques
 
@@ -21,7 +55,7 @@ Step2: Examining the data
 
 -observe summary of data. Value to be predicted is SalesPrice.
 -drop ID as an independent variable
-```{r }
+```{r results='hide'}
 housing <- housing[ , !(names(housing) %in% "Id")] #remove the Id column
 str(housing)
 ```
@@ -307,7 +341,7 @@ ModelB: Regression Tree
 
 - Step 3: Training the model
 - use rpart decision tree
-```{r }
+```{r results='hide'}
 library(rpart)
 model3_decisiontree1 <- rpart(SalePrice ~ ., data = housing_train)
 summary(model3_decisiontree1) 
@@ -324,7 +358,7 @@ rmse(error_decision_tree)
 
 - Step 5: Improving Model Performance
 - implement a Bagged Regeression Tree using ipred package
-```{r }
+```{r results='hide'}
 library(ipred)
 set.seed(300)
 model4_decision_tree_ipred <- bagging(SalePrice ~ ., data = housing_train, nbagg = 25)
@@ -341,7 +375,7 @@ ModelC: Random Forest
 
 Step3: Training the model
 - implement a random forest using significant continous variable predictors
-```{r }
+```{r results='hide'}
 library(randomForest)
 set.seed(300)
 rf <- randomForest(SalePrice ~ LotArea + OverallQual + GrLivArea + GarageCars + YearBuilt + TotalBsmtSF + WoodDeckSF, data = housing_train, na.action = na.omit)
@@ -419,7 +453,7 @@ rmse(error_decision_tree_ipred)
 ```
 
 - Set1 Bagged Regression Tree RMSE
-```{r }
+```{r results='hide'}
 library(ipred)
 set.seed(300)
 model_bagged_train1 <- bagging(SalePrice ~ ., data = train1, nbagg = 25)
@@ -429,7 +463,7 @@ dat["train_DropNAs", "Bagged Regression Tree"] <- rmse(error_test1_bagged)
 ```
 
 - Set2 Bagged Regression Tree RMSE
-```{r }
+```{r results='hide'}
 model_bagged_train2 <- bagging(SalePrice ~ ., data = train2, nbagg = 25)
 pred_test2_bagged <- predict(model_bagged_train2, test2)
 error_test2_bagged <- test2_actual - pred_test2_bagged
@@ -437,7 +471,7 @@ dat["train_NAsToMode", "Bagged Regression Tree"] <- rmse(error_test2_bagged)
 ```
 
 - Set3 Bagged Regression Tree RMSE
-```{r }
+```{r results='hide'}
 model_bagged_train3 <- bagging(SalePrice ~ ., data = train3, nbagg = 25)
 pred_test3_bagged <- predict(model_bagged_train3, test3)
 error_test3_bagged <- test3_actual - pred_test3_bagged
@@ -445,7 +479,7 @@ dat["train_IntsToFactors", "Bagged Regression Tree"] <- rmse(error_test3_bagged)
 ```
 
 - Set4 Bagged Regression Tree RMSE
-```{r }
+```{r results='hide'}
 model_bagged_train4 <- bagging(SalePrice ~ ., data = train4, nbagg = 25)
 pred_test4_bagged <- predict(model_bagged_train4, test4)
 error_test4_bagged <- test4_actual - pred_test4_bagged
@@ -453,7 +487,7 @@ dat["train_NoNomVars", "Bagged Regression Tree"] <- rmse(error_test4_bagged)
 ```
 
 - Set5 Bagged Regression Tree RMSE
-```{r }
+```{r results='hide'}
 model_bagged_train5 <- bagging(SalePrice ~ ., data = train5, nbagg = 25)
 pred_test5_bagged <- predict(model_bagged_train5, test5)
 error_test5_bagged <- test5_actual - pred_test5_bagged
